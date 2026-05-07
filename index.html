@@ -1,925 +1,551 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="theme-color" content="#D85A30">
-<title>encontralo</title>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,700;0,900&family=DM+Mono:wght@400;500&family=Instrument+Sans:ital,wght@0,400;0,500;0,600;0,700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
-:root{
-  --terracota:#D85A30;
-  --terracota-deep:#993C1D;
-  --terracota-light:#E8A87C;
-  --crema:#FFF8F2;
-  --crema-mid:#F2E8DC;
-  --crema-border:#E8D5C0;
-  --arena:#D5C9B8;
-  --tinta:#1C1812;
-  --gris:#888780;
-}
-html,body{height:100%;background:var(--crema);font-family:'Instrument Sans',sans-serif;color:var(--tinta);overflow:hidden;}
-#app{height:100%;display:flex;flex-direction:column;max-width:430px;margin:0 auto;position:relative;background:var(--crema);}
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="theme-color" content="#D85A30" />
+  <meta name="description" content="Guardá dónde estacionaste y encontrá tu auto fácilmente." />
+  <title>encontralo</title>
 
-/* ─── SCREEN SYSTEM ─── */
-.screen{position:absolute;inset:0;display:flex;flex-direction:column;transition:transform .32s cubic-bezier(.4,0,.2,1),opacity .32s;will-change:transform;}
-.screen.off{transform:translateX(100%);opacity:0;pointer-events:none;}
-.screen.off-up{transform:translateY(100%);opacity:0;pointer-events:none;}
-.screen.off-left{transform:translateX(-30%);opacity:0;pointer-events:none;}
+  <!-- PWA manifest -->
+  <link rel="manifest" href="manifest.json" />
 
-/* ─── STATUS BAR ─── */
-.sb{padding:11px 20px 4px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
-.sb-time{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;}
+  <!-- Fuentes -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@700;900&family=DM+Mono:wght@400;500&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet" />
 
-/* ─── TOPBAR ─── */
-.tb{padding:6px 16px 8px;display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
-.tb-logo{display:flex;align-items:center;gap:8px;}
-.tb-name{font-size:14px;font-weight:700;letter-spacing:-0.3px;}
-.tb-avatar{width:28px;height:28px;border-radius:50%;background:var(--terracota-light);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--terracota-deep);cursor:pointer;border:none;}
-.tb-back{width:28px;height:28px;border-radius:50%;background:var(--crema-mid);display:flex;align-items:center;justify-content:center;cursor:pointer;border:none;flex-shrink:0;}
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
-/* ─── CTA BUTTON ─── */
-.cta{width:100%;background:var(--terracota);border:none;border-radius:12px;padding:14px;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;transition:opacity .15s;}
-.cta:active{opacity:.85;}
-.cta-t{font-family:'Instrument Sans',sans-serif;font-size:14px;font-weight:700;color:var(--crema);letter-spacing:-0.2px;}
-.sec-btn{flex:1;background:var(--crema-mid);border:none;border-radius:10px;padding:10px;font-size:11px;font-weight:500;color:var(--terracota-deep);display:flex;align-items:center;justify-content:center;gap:5px;cursor:pointer;font-family:'Instrument Sans',sans-serif;}
-.sec-btn:active{opacity:.8;}
-
-/* ─── BOTTOM PANEL ─── */
-.bp{background:var(--crema);border-top:.5px solid var(--crema-border);padding:11px 16px 16px;flex-shrink:0;}
-.bp-handle{display:flex;justify-content:center;margin-bottom:10px;}
-.bp-pill{width:28px;height:3px;background:var(--arena);border-radius:2px;}
-.bp-dir{font-size:14px;font-weight:700;color:var(--tinta);margin-bottom:2px;}
-.bp-meta{font-size:11px;color:var(--gris);}
-
-/* ─── ONBOARDING ─── */
-#scr-onb1,#scr-onb2,#scr-login{background:var(--tinta);}
-.onb-hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:28px 26px 16px;}
-.onb-title{font-family:'Fraunces',serif;font-size:28px;font-weight:900;color:var(--crema);text-align:center;letter-spacing:-.5px;line-height:1.15;margin-bottom:14px;}
-.onb-sub{font-size:13px;color:rgba(255,248,242,.55);text-align:center;line-height:1.65;max-width:220px;}
-.onb-foot{padding:0 20px 32px;display:flex;flex-direction:column;gap:12px;}
-.dots{display:flex;justify-content:center;gap:6px;}
-.dot{width:8px;height:4px;background:rgba(255,248,242,.18);border-radius:2px;}
-.dot.on{width:22px;background:var(--terracota);}
-.skip-link{text-align:center;font-size:11px;color:rgba(255,248,242,.3);cursor:pointer;padding:4px;}
-
-/* ─── PERM BOX ─── */
-.perm-box{width:100%;background:rgba(255,248,242,.05);border:1px solid rgba(255,248,242,.08);border-radius:11px;padding:13px;display:flex;align-items:center;gap:11px;margin-top:16px;}
-.perm-icon{width:34px;height:34px;border-radius:8px;background:rgba(216,90,48,.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-
-/* ─── LOGIN ─── */
-.login-body{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 28px;}
-.login-wordmark{font-family:'Fraunces',serif;font-size:44px;font-weight:900;color:var(--crema);letter-spacing:-1px;margin-bottom:6px;}
-.login-sub{font-size:13px;color:rgba(255,248,242,.45);text-align:center;line-height:1.65;max-width:230px;margin-bottom:36px;}
-.btn-google{width:100%;background:var(--crema);border:none;border-radius:12px;height:52px;display:flex;align-items:center;justify-content:center;gap:11px;font-family:'Instrument Sans',sans-serif;font-size:15px;font-weight:600;color:var(--tinta);cursor:pointer;transition:opacity .15s;}
-.btn-google:active{opacity:.88;}
-.login-terms{margin-top:18px;font-size:11px;color:rgba(255,248,242,.28);text-align:center;line-height:1.7;}
-.login-terms span{color:rgba(255,248,242,.45);text-decoration:underline;cursor:pointer;}
-
-/* ─── HOME ─── */
-#scr-home{background:var(--crema);}
-.empty-state{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:36px 28px;text-align:center;}
-.empty-icon{width:80px;height:80px;border-radius:18px;background:var(--crema-mid);display:flex;align-items:center;justify-content:center;margin-bottom:22px;}
-.empty-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--tinta);margin-bottom:8px;}
-.empty-sub{font-size:14px;color:var(--gris);line-height:1.65;max-width:250px;margin-bottom:32px;}
-.map-state{flex:1;display:flex;flex-direction:column;overflow:hidden;}
-#map-home{flex:1;min-height:0;}
-/* distance badges */
-.dist-badge{display:inline-block;background:var(--crema-mid);border-radius:5px;padding:3px 7px;font-size:10px;font-weight:500;color:var(--tinta);}
-.walk-badge{display:inline-block;background:var(--crema-mid);border-radius:5px;padding:3px 7px;font-size:10px;color:var(--gris);}
-/* mini photo thumb */
-.thumb{width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,#3A3028,#2A2018);flex-shrink:0;overflow:hidden;display:flex;align-items:center;justify-content:center;}
-
-/* ─── NAVBAR ─── */
-.nav-bar{height:66px;background:var(--crema);border-top:.5px solid var(--crema-border);display:flex;align-items:center;flex-shrink:0;padding:0 12px 6px;}
-.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;cursor:pointer;padding:6px;border:none;background:transparent;border-radius:10px;transition:background .15s;}
-.nav-item:active{background:var(--crema-mid);}
-.nav-svg{color:var(--arena);}
-.nav-lbl{font-size:10px;color:var(--arena);font-family:'Instrument Sans',sans-serif;}
-.nav-item.active .nav-svg{color:var(--terracota);}
-.nav-item.active .nav-lbl{color:var(--terracota);}
-.nav-fab{flex:0 0 auto;display:flex;align-items:center;justify-content:center;padding:0 8px;position:relative;}
-.fab{width:58px;height:58px;background:var(--terracota);border-radius:50%;border:none;display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 4px 16px rgba(216,90,48,.4);position:relative;top:-10px;transition:transform .15s,box-shadow .15s;}
-.fab:active{transform:scale(.92);box-shadow:0 2px 8px rgba(216,90,48,.3);}
-
-/* ─── GUARDAR ─── */
-#scr-guardar{background:var(--crema);}
-.guard-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;}
-.field-lbl{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--gris);margin-bottom:7px;}
-.field-box{background:white;border:1.5px solid var(--crema-border);border-radius:11px;padding:13px 15px;margin-bottom:14px;}
-.field-box:focus-within{border-color:var(--terracota);}
-.field-val{font-size:14px;font-weight:600;color:var(--tinta);}
-.field-sub{font-size:11px;color:var(--gris);margin-top:2px;}
-.field-input{width:100%;border:none;outline:none;font-family:'Instrument Sans',sans-serif;font-size:14px;color:var(--tinta);background:transparent;resize:none;}
-.field-input::placeholder{color:var(--arena);}
-.tipo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;}
-.tipo-btn{background:white;border:1.5px solid var(--crema-border);border-radius:11px;padding:11px 8px;text-align:center;cursor:pointer;transition:all .15s;}
-.tipo-btn.sel{border-color:var(--terracota);background:rgba(216,90,48,.05);}
-.tipo-emoji{font-size:20px;margin-bottom:4px;}
-.tipo-lbl{font-size:11px;color:var(--tinta);font-weight:500;}
-#map-guardar{height:150px;border-radius:11px;overflow:hidden;margin-bottom:14px;}
-.foto-area{border:2px dashed var(--arena);border-radius:11px;height:108px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;cursor:pointer;margin-bottom:14px;background:white;}
-.foto-area:active{border-color:var(--terracota);}
-#preview-foto{width:100%;height:108px;object-fit:cover;border-radius:11px;margin-bottom:14px;display:none;}
-.guard-hint{text-align:center;font-size:10px;color:var(--gris);margin-top:6px;}
-
-/* ─── CONFIRMACION ─── */
-#scr-confirm{background:var(--tinta);}
-.conf-hero{padding:28px 22px 16px;display:flex;flex-direction:column;align-items:center;gap:11px;flex-shrink:0;}
-.conf-ring{width:62px;height:62px;border-radius:50%;background:var(--terracota);display:flex;align-items:center;justify-content:center;animation:pop .4s cubic-bezier(.4,0,.2,1);}
-@keyframes pop{from{transform:scale(.5);opacity:0;}to{transform:scale(1);opacity:1;}}
-.conf-title{font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--crema);text-align:center;line-height:1.2;}
-.conf-sub{font-size:12px;color:var(--gris);text-align:center;max-width:200px;line-height:1.55;}
-.conf-card{margin:0 16px;background:rgba(255,248,242,.06);border-radius:13px;padding:14px;display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
-.conf-row{display:flex;align-items:flex-start;gap:10px;}
-.conf-icon{width:28px;height:28px;border-radius:7px;background:rgba(255,248,242,.07);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.conf-main{font-size:13px;font-weight:600;color:var(--crema);}
-.conf-sub2{font-size:10px;color:var(--gris);margin-top:1px;}
-.conf-div{height:.5px;background:rgba(255,248,242,.08);}
-.conf-actions{padding:12px 16px 20px;display:flex;flex-direction:column;gap:7px;}
-.conf-share{background:rgba(255,248,242,.08);border:none;border-radius:11px;padding:11px;display:flex;align-items:center;justify-content:center;gap:7px;cursor:pointer;width:100%;}
-.conf-share-t{font-family:'Instrument Sans',sans-serif;font-size:13px;font-weight:500;color:var(--crema);}
-.conf-dismiss{text-align:center;font-size:11px;color:var(--gris);cursor:pointer;padding:4px;}
-
-/* ─── HISTORIAL ─── */
-#scr-hist{background:var(--crema);}
-.hist-list{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:10px 14px;}
-.hist-item{background:var(--crema-mid);border-radius:11px;padding:11px;display:flex;gap:10px;align-items:flex-start;margin-bottom:7px;}
-.hist-item.active{border:1.5px solid var(--terracota-light);}
-.hist-thumb{width:42px;height:42px;border-radius:7px;background:linear-gradient(135deg,#3A3028,#4A3D30);flex-shrink:0;}
-.hist-thumb.empty{background:var(--arena);display:flex;align-items:center;justify-content:center;}
-.hist-dir{font-size:12px;font-weight:700;color:var(--tinta);margin-bottom:2px;}
-.hist-meta{font-size:10px;color:var(--gris);}
-.hist-badge{font-family:'DM Mono',monospace;font-size:9px;background:rgba(216,90,48,.1);color:var(--terracota);border-radius:4px;padding:2px 5px;white-space:nowrap;flex-shrink:0;}
-.hist-badge-old{font-family:'DM Mono',monospace;font-size:9px;color:var(--gris);}
-.ad-banner{margin:0 14px 12px;background:var(--crema-mid);border:1px solid var(--crema-border);border-radius:9px;padding:9px 12px;display:flex;align-items:center;gap:9px;flex-shrink:0;}
-.ad-sq{width:30px;height:30px;border-radius:6px;background:var(--arena);flex-shrink:0;}
-.ad-pub{font-family:'DM Mono',monospace;font-size:9px;color:var(--gris);letter-spacing:.08em;}
-.ad-txt{font-size:10px;color:var(--gris);}
-.hist-clear{text-align:center;margin:8px 0 4px;}
-.hist-clear button{background:none;border:none;font-size:11px;color:rgba(200,80,50,.5);font-family:'Instrument Sans',sans-serif;cursor:pointer;padding:6px 12px;}
-
-/* ─── PERFIL ─── */
-#scr-perfil{background:var(--crema);}
-.perf-body{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:16px;}
-.perf-header{display:flex;align-items:center;gap:14px;margin-bottom:24px;padding:4px 0;}
-.perf-avatar{width:56px;height:56px;border-radius:50%;background:var(--terracota-light);display:flex;align-items:center;justify-content:center;font-family:'Fraunces',serif;font-size:22px;font-weight:700;color:var(--terracota-deep);flex-shrink:0;}
-.perf-name{font-size:18px;font-weight:700;color:var(--tinta);line-height:1.2;}
-.perf-email{font-size:12px;color:var(--gris);margin-top:2px;}
-.perf-sect-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--gris);letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;padding-left:2px;}
-.perf-group{background:var(--crema-mid);border-radius:13px;overflow:hidden;margin-bottom:16px;}
-.perf-row{padding:12px 14px;display:flex;align-items:center;gap:11px;border-bottom:.5px solid var(--crema-border);cursor:pointer;}
-.perf-row:last-child{border:none;}
-.perf-row-icon{width:32px;height:32px;border-radius:8px;background:rgba(216,90,48,.1);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
-.perf-row-title{font-size:12px;font-weight:500;color:var(--tinta);}
-.perf-row-sub{font-size:10px;color:var(--gris);}
-.toggle{width:38px;height:22px;border-radius:11px;position:relative;cursor:pointer;transition:background .2s;flex-shrink:0;}
-.toggle.on{background:var(--terracota);}
-.toggle.off{background:var(--arena);}
-.toggle-k{position:absolute;top:3px;width:16px;height:16px;background:var(--crema);border-radius:50%;transition:left .2s;}
-.toggle.on .toggle-k{left:19px;}
-.toggle.off .toggle-k{left:3px;}
-.btn-logout{width:100%;background:#FFF0EE;border:1px solid rgba(200,70,50,.2);border-radius:11px;padding:12px;font-size:13px;font-weight:600;color:#C84632;font-family:'Instrument Sans',sans-serif;cursor:pointer;margin-top:4px;}
-.btn-logout:active{opacity:.8;}
-.ver-txt{text-align:center;margin-top:12px;font-family:'DM Mono',monospace;font-size:9px;color:rgba(136,135,128,.4);}
-</style>
+  <!-- Estilos propios -->
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+
 <div id="app">
 
-<!-- ══ ONB 1 ══════════════════════════════════════════════ -->
-<div class="screen" id="scr-onb1" style="background:var(--tinta);">
-  <div class="sb">
-    <span class="sb-time" id="clk1" style="color:var(--crema);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
-    </div>
-  </div>
-  <div class="onb-hero">
-    <!-- ilustración auto + pin -->
-    <div style="position:relative;width:130px;height:108px;margin-bottom:30px;">
-      <div style="position:absolute;bottom:0;left:0;right:0;height:24px;background:rgba(255,248,242,.06);border-radius:8px;"></div>
-      <div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);">
-        <svg width="76" height="46" viewBox="0 0 76 46" fill="none">
-          <rect x="5" y="18" width="66" height="22" rx="6" fill="#D85A30"/>
-          <rect x="15" y="8" width="40" height="20" rx="5" fill="#E8A87C"/>
-          <rect x="19" y="10" width="15" height="13" rx="3" fill="#1C1812" opacity=".38"/>
-          <rect x="38" y="10" width="12" height="13" rx="3" fill="#1C1812" opacity=".38"/>
-          <circle cx="18" cy="40" r="6.5" fill="#1C1812"/><circle cx="18" cy="40" r="3" fill="#888780"/>
-          <circle cx="58" cy="40" r="6.5" fill="#1C1812"/><circle cx="58" cy="40" r="3" fill="#888780"/>
-          <rect x="2" y="24" width="9" height="7" rx="2" fill="#E8A87C"/>
-          <rect x="65" y="24" width="9" height="7" rx="2" fill="#E8A87C"/>
-        </svg>
-      </div>
-      <div style="position:absolute;top:0;left:50%;transform:translateX(-50%);">
-        <svg width="30" height="38" viewBox="0 0 30 38" fill="none">
-          <circle cx="15" cy="15" r="14" fill="#D85A30"/>
-          <circle cx="15" cy="15" r="6.5" fill="#FFF8F2"/>
-          <path d="M15 29 L15 38" stroke="#D85A30" stroke-width="2" stroke-linecap="round"/>
-        </svg>
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: ONBOARDING 1 — Propuesta de valor
+  ════════════════════════════════════════════ -->
+  <section class="screen active" id="screen-onb1" data-screen="onb1">
+    <div class="sb sb--dark">
+      <span class="sb__time js-clock">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
       </div>
     </div>
-    <div class="onb-title">¿Dónde dejaste<br>el auto?</div>
-    <p class="onb-sub">Con un tap guardás el lugar. Cuando volvás, encontralo te lleva directo.</p>
-  </div>
-  <div class="onb-foot">
-    <div class="dots"><div class="dot on"></div><div class="dot"></div></div>
-    <button class="cta" onclick="go('scr-onb2')"><span class="cta-t">Siguiente</span></button>
-  </div>
-</div>
 
-<!-- ══ ONB 2 - PERMISOS ═══════════════════════════════════ -->
-<div class="screen off" id="scr-onb2" style="background:var(--tinta);">
-  <div class="sb">
-    <span class="sb-time" style="color:var(--crema);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
+    <div class="onb__body">
+      <div class="onb__illustration" aria-hidden="true">
+        <svg width="130" height="108" viewBox="0 0 130 108" fill="none">
+          <!-- calle -->
+          <rect x="5" y="86" width="120" height="22" rx="8" fill="rgba(255,248,242,0.06)"/>
+          <!-- auto -->
+          <rect x="28" y="48" width="74" height="38" rx="6" fill="#D85A30"/>
+          <rect x="38" y="32" width="50" height="26" rx="5" fill="#E8A87C"/>
+          <rect x="42" y="34" width="18" height="18" rx="3" fill="#1C1812" opacity=".38"/>
+          <rect x="64" y="34" width="18" height="18" rx="3" fill="#1C1812" opacity=".38"/>
+          <circle cx="40" cy="86" r="8" fill="#1C1812"/><circle cx="40" cy="86" r="4" fill="#888780"/>
+          <circle cx="90" cy="86" r="8" fill="#1C1812"/><circle cx="90" cy="86" r="4" fill="#888780"/>
+          <rect x="20" y="56" width="12" height="9" rx="2" fill="#E8A87C"/>
+          <rect x="98" y="56" width="12" height="9" rx="2" fill="#E8A87C"/>
+          <!-- pin -->
+          <circle cx="65" cy="16" r="14" fill="#D85A30"/>
+          <circle cx="65" cy="16" r="6" fill="#FFF8F2"/>
+          <line x1="65" y1="30" x2="65" y2="46" stroke="#D85A30" stroke-width="2.5" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h1 class="onb__title">¿Dónde dejaste<br>el auto?</h1>
+      <p class="onb__sub">Con un tap guardás el lugar. Cuando volvás, encontralo te lleva directo.</p>
     </div>
-  </div>
-  <div class="onb-hero">
-    <!-- pin animado -->
-    <div style="margin-bottom:26px;position:relative;">
-      <div style="width:76px;height:76px;border-radius:50%;background:rgba(216,90,48,.1);display:flex;align-items:center;justify-content:center;">
-        <div style="width:54px;height:54px;border-radius:50%;background:rgba(216,90,48,.17);display:flex;align-items:center;justify-content:center;">
-          <svg width="30" height="30" viewBox="0 0 28 28" fill="none">
-            <path d="M14 2C9.6 2 6 5.6 6 10C6 16.3 14 26 14 26S22 16.3 22 10C22 5.6 18.4 2 14 2Z" fill="#D85A30"/>
-            <circle cx="14" cy="10" r="3.5" fill="#FFF8F2"/>
-          </svg>
+
+    <div class="onb__footer">
+      <div class="dots" aria-hidden="true">
+        <span class="dot dot--active"></span>
+        <span class="dot"></span>
+      </div>
+      <button class="btn-primary js-nav" data-to="onb2">Siguiente</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: ONBOARDING 2 — Permisos GPS
+  ════════════════════════════════════════════ -->
+  <section class="screen" id="screen-onb2" data-screen="onb2">
+    <div class="sb sb--dark">
+      <span class="sb__time js-clock">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
+      </div>
+    </div>
+
+    <div class="onb__body">
+      <div class="perm__rings" aria-hidden="true">
+        <div class="perm__ring perm__ring--outer">
+          <div class="perm__ring perm__ring--inner">
+            <svg width="30" height="30" viewBox="0 0 28 28" fill="none"><path d="M14 2C9.6 2 6 5.6 6 10C6 16.3 14 26 14 26S22 16.3 22 10C22 5.6 18.4 2 14 2Z" fill="#D85A30"/><circle cx="14" cy="10" r="3.5" fill="#FFF8F2"/></svg>
+          </div>
+        </div>
+      </div>
+      <h1 class="onb__title onb__title--sm">Necesitamos<br>tu ubicación</h1>
+      <p class="onb__sub">Para guardar dónde está tu auto necesitamos acceder a tu GPS. Solo lo usamos cuando abrís la app.</p>
+      <div class="perm__box">
+        <div class="perm__icon">
+          <svg width="15" height="15" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.8 1 3 2.8 3 5C3 8.5 7 13 7 13S11 8.5 11 5C11 2.8 9.2 1 7 1Z" stroke="#D85A30" stroke-width="1.2" fill="none"/><circle cx="7" cy="5" r="1.5" fill="#D85A30"/></svg>
+        </div>
+        <div>
+          <p class="perm__label">Ubicación exacta</p>
+          <p class="perm__sub">Solo mientras usás la app</p>
         </div>
       </div>
     </div>
-    <div class="onb-title" style="font-size:24px;margin-bottom:12px;">Necesitamos<br>tu ubicación</div>
-    <p class="onb-sub">Para guardar dónde está tu auto necesitamos acceder a tu GPS. Solo lo usamos cuando abrís la app.</p>
-    <div class="perm-box">
-      <div class="perm-icon">
-        <svg width="15" height="15" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.8 1 3 2.8 3 5C3 8.5 7 13 7 13S11 8.5 11 5C11 2.8 9.2 1 7 1Z" stroke="#D85A30" stroke-width="1.2" fill="none"/><circle cx="7" cy="5" r="1.5" fill="#D85A30"/></svg>
-      </div>
-      <div>
-        <div style="font-size:12px;font-weight:600;color:var(--crema);margin-bottom:2px;">Ubicación exacta</div>
-        <div style="font-size:10px;color:rgba(255,248,242,.4);line-height:1.4;">Solo mientras usás la app</div>
-      </div>
-    </div>
-  </div>
-  <div class="onb-foot">
-    <div class="dots"><div class="dot"></div><div class="dot on"></div></div>
-    <button class="cta" onclick="go('scr-login')"><span class="cta-t">Dar permiso y continuar</span></button>
-    <div class="skip-link" onclick="go('scr-login')">Saltar por ahora</div>
-  </div>
-</div>
 
-<!-- ══ LOGIN ══════════════════════════════════════════════ -->
-<div class="screen off" id="scr-login" style="background:var(--tinta);">
-  <div class="sb">
-    <span class="sb-time" style="color:var(--crema);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
+    <div class="onb__footer">
+      <div class="dots" aria-hidden="true">
+        <span class="dot"></span>
+        <span class="dot dot--active"></span>
+      </div>
+      <button class="btn-primary js-nav" data-to="login" id="btn-perm">Dar permiso y continuar</button>
+      <button class="btn-ghost js-nav" data-to="login">Saltar por ahora</button>
     </div>
-  </div>
-  <div class="login-body">
-    <div style="margin-bottom:24px;">
-      <svg width="56" height="56" viewBox="0 0 52 52" fill="none">
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: LOGIN — Google Auth
+  ════════════════════════════════════════════ -->
+  <section class="screen" id="screen-login" data-screen="login">
+    <div class="sb sb--dark">
+      <span class="sb__time js-clock">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
+      </div>
+    </div>
+
+    <div class="login__body">
+      <svg class="login__logo" width="56" height="56" viewBox="0 0 52 52" fill="none" aria-label="encontralo logo">
         <rect width="52" height="52" rx="12" fill="#D85A30"/>
         <rect x="9" y="22" width="34" height="18" rx="4.5" fill="#FFF8F2"/>
         <circle cx="17" cy="37" r="4" fill="#D85A30"/><circle cx="35" cy="37" r="4" fill="#D85A30"/>
         <rect x="11" y="26" width="9" height="6" rx="1.8" fill="#D85A30"/>
         <rect x="23" y="26" width="9" height="6" rx="1.8" fill="#D85A30"/>
         <circle cx="38" cy="14" r="6" fill="#FFF8F2"/><circle cx="38" cy="14" r="3" fill="#D85A30"/>
-        <path d="M38 20 L38 24" stroke="#FFF8F2" stroke-width="1.8" stroke-linecap="round"/>
+        <path d="M38 20L38 24" stroke="#FFF8F2" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
-    </div>
-    <div class="login-wordmark">encontralo</div>
-    <p class="login-sub">Ingresá con tu cuenta de Google para guardar tus lugares y acceder desde cualquier dispositivo.</p>
-    <button class="btn-google" id="btn-google" onclick="doLogin()">
-      <svg width="20" height="20" viewBox="0 0 24 24"><path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/><path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/><path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/><path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/></svg>
-      Continuar con Google
-    </button>
-    <p class="login-terms">Al continuar aceptás los <span>Términos de uso</span> y la <span>Política de privacidad</span>.</p>
-  </div>
-</div>
+      <h1 class="login__wordmark">encontralo</h1>
+      <p class="login__sub">Ingresá con tu cuenta de Google para guardar tus lugares y acceder desde cualquier dispositivo.</p>
 
-<!-- ══ HOME ═══════════════════════════════════════════════ -->
-<div class="screen off" id="scr-home" style="background:var(--crema);">
-  <div class="sb" style="background:var(--crema);">
-    <span class="sb-time" id="clock" style="color:var(--tinta);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#1C1812" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#1C1812"/></svg>
-    </div>
-  </div>
-  <div class="tb" style="background:var(--crema);">
-    <div class="tb-logo">
-      <svg width="24" height="24" viewBox="0 0 24 24" fill="none"><rect width="24" height="24" rx="5.5" fill="#D85A30"/><rect x="4.5" y="10" width="15" height="8" rx="2" fill="#FFF8F2"/><circle cx="7.5" cy="16.5" r="2" fill="#D85A30"/><circle cx="16.5" cy="16.5" r="2" fill="#D85A30"/><rect x="5.5" y="12" width="4" height="2.8" rx="1" fill="#D85A30"/><rect x="11" y="12" width="4" height="2.8" rx="1" fill="#D85A30"/><circle cx="17.5" cy="6" r="2.8" fill="#FFF8F2"/><circle cx="17.5" cy="6" r="1.4" fill="#D85A30"/><path d="M17.5 8.8 L17.5 11" stroke="#FFF8F2" stroke-width="1.1" stroke-linecap="round"/></svg>
-      <span class="tb-name" style="color:var(--tinta);">encontralo</span>
-    </div>
-    <button class="tb-avatar" onclick="go('scr-perfil')" id="user-initials">MA</button>
-  </div>
+      <!--
+        ═══════════════════════════════════════
+        SUPABASE: reemplazar onclick por Auth real
+        Ver app.js → Auth.loginWithGoogle()
+        ═══════════════════════════════════════
+      -->
+      <button class="btn-google" id="btn-google" onclick="Auth.loginWithGoogle()">
+        <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Continuar con Google
+      </button>
 
-  <!-- ESTADO A: sin auto -->
-  <div class="empty-state" id="state-empty">
-    <div class="empty-icon">
-      <svg width="40" height="40" viewBox="0 0 52 52" fill="none">
-        <rect x="4" y="18" width="38" height="20" rx="5" fill="var(--arena)"/>
-        <circle cx="12" cy="34" r="4.5" fill="var(--crema-border)"/><circle cx="34" cy="34" r="4.5" fill="var(--crema-border)"/>
-        <rect x="6" y="22" width="10" height="7" rx="2" fill="var(--crema-border)"/>
-        <rect x="20" y="22" width="10" height="7" rx="2" fill="var(--crema-border)"/>
-        <circle cx="40" cy="10" r="7" fill="var(--arena)"/>
-        <circle cx="40" cy="10" r="3.5" fill="var(--crema-border)"/>
-        <path d="M40 17 L40 22" stroke="var(--crema-border)" stroke-width="2" stroke-linecap="round"/>
-      </svg>
+      <p class="login__terms">
+        Al continuar aceptás los <a href="#" class="login__link">Términos de uso</a>
+        y la <a href="#" class="login__link">Política de privacidad</a>.
+      </p>
     </div>
-    <div class="empty-title">Todavía no guardaste<br>ningún lugar</div>
-    <p class="empty-sub">La próxima vez que estaciones, tocá el botón. Nosotros lo recordamos.</p>
-    <button class="cta" style="max-width:230px;" onclick="initGuardar();go('scr-guardar')">
-      <span class="cta-t">Guardar dónde estoy</span>
-    </button>
-  </div>
+  </section>
 
-  <!-- ESTADO B: con auto guardado -->
-  <div class="map-state" id="state-guardado" style="display:none;">
-    <div id="map-home"></div>
-    <div class="bp">
-      <div class="bp-handle"><div class="bp-pill"></div></div>
-      <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:10px;">
-        <div class="thumb" id="home-thumb">
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: HOME
+       Estado A: sin auto guardado
+       Estado B: con auto guardado
+  ════════════════════════════════════════════ -->
+  <section class="screen" id="screen-home" data-screen="home">
+    <div class="sb sb--light">
+      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#1C1812" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#1C1812"/></svg>
+      </div>
+    </div>
+
+    <header class="topbar">
+      <div class="topbar__logo">
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect width="24" height="24" rx="5.5" fill="#D85A30"/><rect x="4.5" y="10" width="15" height="8" rx="2" fill="#FFF8F2"/><circle cx="7.5" cy="16.5" r="2" fill="#D85A30"/><circle cx="16.5" cy="16.5" r="2" fill="#D85A30"/><rect x="5.5" y="12" width="4" height="2.8" rx="1" fill="#D85A30"/><rect x="11" y="12" width="4" height="2.8" rx="1" fill="#D85A30"/><circle cx="17.5" cy="6" r="2.8" fill="#FFF8F2"/><circle cx="17.5" cy="6" r="1.4" fill="#D85A30"/><path d="M17.5 8.8L17.5 11" stroke="#FFF8F2" stroke-width="1.1" stroke-linecap="round"/></svg>
+        <span class="topbar__name">encontralo</span>
+      </div>
+      <button class="avatar js-nav" data-to="perfil" id="user-avatar" aria-label="Ir a perfil">MA</button>
+    </header>
+
+    <!-- Estado A: sin auto guardado -->
+    <div class="empty-state" id="state-empty">
+      <div class="empty-state__icon" aria-hidden="true">
+        <svg width="42" height="42" viewBox="0 0 52 52" fill="none">
+          <rect x="4" y="18" width="38" height="20" rx="5" fill="var(--arena)"/>
+          <circle cx="12" cy="34" r="4.5" fill="var(--crema-border)"/><circle cx="34" cy="34" r="4.5" fill="var(--crema-border)"/>
+          <rect x="6" y="22" width="10" height="7" rx="2" fill="var(--crema-border)"/>
+          <rect x="20" y="22" width="10" height="7" rx="2" fill="var(--crema-border)"/>
+          <circle cx="40" cy="10" r="7" fill="var(--arena)"/>
+          <circle cx="40" cy="10" r="3.5" fill="var(--crema-border)"/>
+          <path d="M40 17L40 22" stroke="var(--crema-border)" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <h2 class="empty-state__title">Todavía no guardaste<br>ningún lugar</h2>
+      <p class="empty-state__sub">La próxima vez que estaciones, tocá el botón. Nosotros lo recordamos.</p>
+      <button class="btn-primary btn-primary--sm js-open-guardar">Guardar dónde estoy</button>
+    </div>
+
+    <!-- Estado B: con auto guardado -->
+    <div class="map-state hidden" id="state-guardado">
+      <div id="map-home" role="img" aria-label="Mapa con ubicación del auto"></div>
+      <div class="bottom-panel" id="home-panel">
+        <div class="bp__handle" aria-hidden="true"><div class="bp__pill"></div></div>
+        <div class="bp__info">
+          <div class="bp__thumb" id="home-thumb" aria-hidden="true">
+            <svg width="24" height="16" viewBox="0 0 24 16" fill="none" opacity=".4"><rect x="2" y="6" width="20" height="8" rx="2" fill="#FFF8F2"/><rect x="5" y="2" width="12" height="8" rx="2" fill="#FFF8F2"/><circle cx="6" cy="14" r="2.5" fill="#1C1812"/><circle cx="18" cy="14" r="2.5" fill="#1C1812"/></svg>
+          </div>
+          <div class="bp__text">
+            <p class="bp__dir" id="home-dir">—</p>
+            <p class="bp__meta" id="home-meta">—</p>
+            <div class="bp__badges">
+              <span class="badge badge--dist" id="home-dist">—</span>
+              <span class="badge badge--walk" id="home-walk">—</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn-primary" id="btn-llevarme" onclick="App.irARegreso()">
+          <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 11.5V3M6.5 3L3 6.5M6.5 3L10 6.5" stroke="#FFF8F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Llevarme al auto
+        </button>
+        <div class="btn-row">
+          <button class="btn-sec" onclick="App.compartir()">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true"><circle cx="8.5" cy="2" r="1.5" stroke="#993C1D" stroke-width="1"/><circle cx="8.5" cy="9" r="1.5" stroke="#993C1D" stroke-width="1"/><circle cx="2" cy="5.5" r="1.5" stroke="#993C1D" stroke-width="1"/><path d="M3.3 6.1L7.2 8.4M7.2 2.6L3.3 4.9" stroke="#993C1D" stroke-width="1" stroke-linecap="round"/></svg>
+            Compartir
+          </button>
+          <button class="btn-sec" onclick="App.confirmarBorrar()">
+            <svg width="11" height="11" viewBox="0 0 11 11" fill="none" aria-hidden="true"><path d="M9 2L2 9M2 2L9 9" stroke="#993C1D" stroke-width="1.3" stroke-linecap="round"/></svg>
+            Ya llegué
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <nav class="navbar" aria-label="Navegación principal">
+      <button class="nav-item active" id="nav-home" onclick="Nav.setTab('home')" aria-label="Inicio" aria-current="page">
+        <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+        <span class="nav-label">Inicio</span>
+      </button>
+      <div class="nav-fab-wrap">
+        <button class="fab js-open-guardar" aria-label="Guardar lugar actual">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5" aria-hidden="true"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+        </button>
+      </div>
+      <button class="nav-item" id="nav-hist" onclick="Nav.setTab('historial')" aria-label="Historial">
+        <svg class="nav-icon" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 11 11 11"/></svg>
+        <span class="nav-label">Historial</span>
+      </button>
+    </nav>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: GUARDAR LUGAR
+  ════════════════════════════════════════════ -->
+  <section class="screen screen--slide-up" id="screen-guardar" data-screen="guardar">
+    <div class="sb sb--light">
+      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+      </div>
+    </div>
+    <header class="topbar topbar--border">
+      <button class="btn-back js-nav" data-to="home" aria-label="Volver">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2 class="topbar__title">Guardar lugar</h2>
+      <div class="topbar__spacer"></div>
+    </header>
+
+    <div class="form-scroll">
+
+      <div class="field-group">
+        <label class="field-label" for="g-dir-display">Ubicación detectada</label>
+        <div class="field-box" id="g-dir-display">
+          <p class="field-val" id="g-dir">Detectando...</p>
+          <p class="field-sub" id="g-coords">Obteniendo coordenadas...</p>
+        </div>
+      </div>
+
+      <div id="map-guardar" role="img" aria-label="Mapa de ubicación actual"></div>
+
+      <div class="field-group">
+        <p class="field-label" id="tipo-label">Tipo</p>
+        <div class="tipo-grid" role="radiogroup" aria-labelledby="tipo-label">
+          <button class="tipo-btn tipo-btn--sel" role="radio" aria-checked="true" data-tipo="Calle" onclick="Guardar.selTipo(this)">
+            <span class="tipo-emoji" aria-hidden="true">🛣️</span>
+            <span class="tipo-lbl">Calle / vía pública</span>
+          </button>
+          <button class="tipo-btn" role="radio" aria-checked="false" data-tipo="Supermercado" onclick="Guardar.selTipo(this)">
+            <span class="tipo-emoji" aria-hidden="true">🛒</span>
+            <span class="tipo-lbl">Supermercado</span>
+          </button>
+          <button class="tipo-btn" role="radio" aria-checked="false" data-tipo="Shopping" onclick="Guardar.selTipo(this)">
+            <span class="tipo-emoji" aria-hidden="true">🏬</span>
+            <span class="tipo-lbl">Shopping</span>
+          </button>
+          <button class="tipo-btn" role="radio" aria-checked="false" data-tipo="Cochera" onclick="Guardar.selTipo(this)">
+            <span class="tipo-emoji" aria-hidden="true">🅿️</span>
+            <span class="tipo-lbl">Cochera</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <label class="field-label" for="g-nota">Nota (opcional)</label>
+        <div class="field-box">
+          <textarea class="field-input" id="g-nota" rows="2" placeholder="Ej: Frente al kiosco, columna B3..." aria-label="Nota sobre el lugar"></textarea>
+        </div>
+      </div>
+
+      <div class="field-group">
+        <p class="field-label">Foto (opcional)</p>
+        <img id="preview-foto" class="preview-foto hidden" alt="Vista previa de la foto del lugar" />
+        <label class="foto-area" id="foto-area" for="foto-input" role="button" tabindex="0">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--arena)" stroke-width="1.5" aria-hidden="true"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          <span class="foto-area__label">Tocá para sacar una foto</span>
+          <span class="foto-area__sub">Opcional · te ayuda a recordar el lugar</span>
+        </label>
+        <input type="file" id="foto-input" accept="image/*" capture="environment" class="sr-only" aria-label="Subir foto del lugar" onchange="Guardar.handleFoto(this)" />
+      </div>
+
+      <button class="btn-primary" onclick="Guardar.guardar()" id="btn-guardar">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true"><circle cx="7" cy="5.5" r="2" fill="#FFF8F2" opacity=".9"/><path d="M7 1C4.5 1 2.5 3 2.5 5.5C2.5 9.5 7 13 7 13S11.5 9.5 11.5 5.5C11.5 3 9.5 1 7 1Z" fill="#FFF8F2" opacity=".9"/></svg>
+        Guardar acá
+      </button>
+      <p class="form-hint">La ubicación se guarda automáticamente con tu GPS</p>
+      <div class="form-spacer"></div>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: CONFIRMACIÓN
+  ════════════════════════════════════════════ -->
+  <section class="screen screen--slide-up" id="screen-confirm" data-screen="confirm">
+    <div class="sb sb--dark">
+      <span class="sb__time js-clock">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+      </div>
+    </div>
+
+    <div class="confirm__hero">
+      <div class="confirm__ring" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 28 28" fill="none" aria-hidden="true"><path d="M6 14L11 19L22 8" stroke="#FFF8F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </div>
+      <h1 class="confirm__title">¡Listo, guardado!</h1>
+      <p class="confirm__sub">Cuando volvás, encontralo te lleva directo.</p>
+    </div>
+
+    <div class="confirm__card">
+      <div class="confirm__row">
+        <div class="confirm__icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C4.3 1 2.5 2.8 2.5 5C2.5 8 6.5 12 6.5 12S10.5 8 10.5 5C10.5 2.8 8.7 1 6.5 1Z" stroke="#D85A30" stroke-width="1.2" fill="none"/><circle cx="6.5" cy="5" r="1.3" fill="#D85A30"/></svg></div>
+        <div><p class="confirm__val" id="cf-dir">—</p><p class="confirm__meta" id="cf-tipo">—</p></div>
+      </div>
+      <div class="confirm__div"></div>
+      <div class="confirm__row">
+        <div class="confirm__icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#888780" stroke-width="1.2"/><path d="M6.5 4v2.5l1.5 1.5" stroke="#888780" stroke-width="1.2" stroke-linecap="round"/></svg></div>
+        <div><p class="confirm__val" id="cf-hora">—</p><p class="confirm__meta">Guardado hace un momento</p></div>
+      </div>
+      <div class="confirm__div" id="cf-nota-sep" style="display:none;"></div>
+      <div class="confirm__row hidden" id="cf-nota-row">
+        <div class="confirm__icon" aria-hidden="true"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="2" y="2" width="9" height="9" rx="1.5" stroke="#888780" stroke-width="1.2"/><path d="M4 5h5M4 7.5h3" stroke="#888780" stroke-width="1" stroke-linecap="round"/></svg></div>
+        <div><p class="confirm__val" id="cf-nota-val">—</p><p class="confirm__meta">Nota guardada</p></div>
+      </div>
+    </div>
+
+    <div class="confirm__actions">
+      <button class="btn-share" onclick="App.compartir()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><circle cx="10" cy="2.5" r="1.5" stroke="#FFF8F2" stroke-width="1.1"/><circle cx="10" cy="10.5" r="1.5" stroke="#FFF8F2" stroke-width="1.1"/><circle cx="3" cy="6.5" r="1.5" stroke="#FFF8F2" stroke-width="1.1"/><path d="M4.3 7.2L8.7 9.8M8.7 3.2L4.3 5.8" stroke="#FFF8F2" stroke-width="1.1" stroke-linecap="round"/></svg>
+        Compartir por WhatsApp
+      </button>
+      <button class="btn-primary" onclick="App.volverHome()">Ir a donde dejé el auto</button>
+      <button class="btn-ghost-dark" onclick="App.volverHome()">Cerrar — ya sé dónde está</button>
+    </div>
+  </section>
+
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: REGRESO AL AUTO
+  ════════════════════════════════════════════ -->
+  <section class="screen" id="screen-regreso" data-screen="regreso">
+    <div class="sb sb--light">
+      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
+      </div>
+    </div>
+    <header class="topbar topbar--border">
+      <button class="btn-back js-nav" data-to="home" aria-label="Volver">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2 class="topbar__title">Tu auto</h2>
+      <div class="topbar__spacer"></div>
+    </header>
+
+    <div id="map-regreso" role="img" aria-label="Mapa con ruta al auto" style="flex:1;min-height:0;"></div>
+
+    <div class="bottom-panel">
+      <div class="bp__handle" aria-hidden="true"><div class="bp__pill"></div></div>
+      <div class="bp__info">
+        <div class="bp__thumb" aria-hidden="true">
           <svg width="24" height="16" viewBox="0 0 24 16" fill="none" opacity=".4"><rect x="2" y="6" width="20" height="8" rx="2" fill="#FFF8F2"/><rect x="5" y="2" width="12" height="8" rx="2" fill="#FFF8F2"/><circle cx="6" cy="14" r="2.5" fill="#1C1812"/><circle cx="18" cy="14" r="2.5" fill="#1C1812"/></svg>
         </div>
-        <div style="flex:1;">
-          <div class="bp-dir" id="home-dir">Av. Santa Fe 2847</div>
-          <div class="bp-meta" id="home-meta">Recoleta · Guardado hace 2h 36m</div>
-          <div style="display:flex;gap:8px;margin-top:6px;">
-            <span class="dist-badge" id="home-dist">340 m</span>
-            <span class="walk-badge" id="home-walk">~4 min caminando</span>
+        <div class="bp__text">
+          <p class="bp__dir" id="reg-dir">—</p>
+          <p class="bp__meta" id="reg-meta">—</p>
+          <div class="bp__badges">
+            <span class="badge badge--dist" id="reg-dist">—</span>
+            <span class="badge badge--walk" id="reg-walk">—</span>
           </div>
         </div>
       </div>
-      <button class="cta" style="margin-bottom:7px;" onclick="initRegreso();go('scr-regreso')">
-        <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 11.5V3M6.5 3L3 6.5M6.5 3L10 6.5" stroke="#FFF8F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        <span class="cta-t">Llevarme al auto</span>
+      <button class="btn-primary" onclick="App.abrirMaps()">
+        <svg width="13" height="13" viewBox="0 0 13 13" fill="none" aria-hidden="true"><path d="M6.5 11.5V3M6.5 3L3 6.5M6.5 3L10 6.5" stroke="#FFF8F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Abrir en Google Maps
       </button>
-      <div style="display:flex;gap:7px;">
-        <button class="sec-btn" onclick="compartir()">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="8.5" cy="2" r="1.5" stroke="#993C1D" stroke-width="1"/><circle cx="8.5" cy="9" r="1.5" stroke="#993C1D" stroke-width="1"/><circle cx="2" cy="5.5" r="1.5" stroke="#993C1D" stroke-width="1"/><path d="M3.3 6.1L7.2 8.4M7.2 2.6L3.3 4.9" stroke="#993C1D" stroke-width="1" stroke-linecap="round"/></svg>
-          Compartir
-        </button>
-        <button class="sec-btn" onclick="confirmarBorrar()">
-          <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><path d="M9 2L2 9M2 2L9 9" stroke="#993C1D" stroke-width="1.3" stroke-linecap="round"/></svg>
-          Ya llegué
-        </button>
+      <div class="btn-row">
+        <button class="btn-sec" onclick="App.compartir()">Compartir</button>
+        <button class="btn-sec" onclick="App.confirmarBorrar()">Ya llegué</button>
       </div>
     </div>
-  </div>
+  </section>
 
-  <div class="nav-bar">
-    <button class="nav-item active" id="nav-home" onclick="setTab('home')">
-      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-      <span class="nav-lbl">Inicio</span>
-    </button>
-    <div class="nav-fab">
-      <button class="fab" onclick="initGuardar();go('scr-guardar')">
-        <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      </button>
-    </div>
-    <button class="nav-item" id="nav-hist" onclick="setTab('hist')">
-      <svg class="nav-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="12 8 12 12 14 14"/><path d="M3.05 11a9 9 0 1 0 .5-4.5"/><polyline points="3 3 3 11 11 11"/></svg>
-      <span class="nav-lbl">Historial</span>
-    </button>
-  </div>
-</div>
 
-<!-- ══ GUARDAR ════════════════════════════════════════════ -->
-<div class="screen off-up" id="scr-guardar" style="background:var(--crema);">
-  <div class="sb" style="background:var(--crema);">
-    <span class="sb-time" style="color:var(--tinta);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-    </div>
-  </div>
-  <div class="tb" style="background:var(--crema);border-bottom:.5px solid var(--crema-border);">
-    <button class="tb-back" onclick="go('scr-home')">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <span style="font-size:14px;font-weight:600;color:var(--tinta);">Guardar lugar</span>
-    <div style="width:28px;"></div>
-  </div>
-  <div class="guard-body">
-    <div class="field-lbl">Ubicación detectada</div>
-    <div class="field-box">
-      <div class="field-val" id="g-dir">Detectando...</div>
-      <div class="field-sub" id="g-coords">Obteniendo coordenadas...</div>
-    </div>
-    <div id="map-guardar"></div>
-    <div class="field-lbl">Tipo</div>
-    <div class="tipo-grid">
-      <div class="tipo-btn sel" onclick="selTipo(this,'Calle')"><div class="tipo-emoji">🛣️</div><div class="tipo-lbl">Calle / vía pública</div></div>
-      <div class="tipo-btn" onclick="selTipo(this,'Supermercado')"><div class="tipo-emoji">🛒</div><div class="tipo-lbl">Supermercado</div></div>
-      <div class="tipo-btn" onclick="selTipo(this,'Shopping')"><div class="tipo-emoji">🏬</div><div class="tipo-lbl">Shopping</div></div>
-      <div class="tipo-btn" onclick="selTipo(this,'Cochera')"><div class="tipo-emoji">🅿️</div><div class="tipo-lbl">Cochera</div></div>
-    </div>
-    <div class="field-lbl">Nota (opcional)</div>
-    <div class="field-box">
-      <textarea class="field-input" id="g-nota" rows="2" placeholder="Ej: Frente al kiosco, columna B3..."></textarea>
-    </div>
-    <div class="field-lbl">Foto (opcional)</div>
-    <img id="preview-foto" alt="foto"/>
-    <div class="foto-area" id="foto-area" onclick="document.getElementById('foto-input').click()">
-      <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--arena)" stroke-width="1.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-      <span style="font-size:12px;color:var(--gris);">Tocá para sacar una foto</span>
-      <span style="font-size:10px;color:var(--arena);">Opcional · te ayuda a recordar el lugar</span>
-    </div>
-    <input type="file" id="foto-input" accept="image/*" capture="environment" style="display:none;" onchange="handleFoto(this)"/>
-    <button class="cta" onclick="guardarLugar()">
-      <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.5 1 2.5 3 2.5 5.5C2.5 9.5 7 13 7 13S11.5 9.5 11.5 5.5C11.5 3 9.5 1 7 1Z" fill="#FFF8F2" opacity=".9"/><circle cx="7" cy="5.5" r="1.8" fill="#D85A30"/></svg>
-      <span class="cta-t">Guardar acá</span>
-    </button>
-    <div class="guard-hint">La ubicación se guarda automáticamente con tu GPS</div>
-    <div style="height:20px;"></div>
-  </div>
-</div>
-
-<!-- ══ CONFIRMACION ═══════════════════════════════════════ -->
-<div class="screen off-up" id="scr-confirm" style="background:var(--tinta);">
-  <div class="sb">
-    <span class="sb-time" style="color:var(--crema);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-    </div>
-  </div>
-  <div class="conf-hero">
-    <div class="conf-ring">
-      <svg width="28" height="28" viewBox="0 0 28 28" fill="none"><path d="M6 14L11 19L22 8" stroke="#FFF8F2" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </div>
-    <div class="conf-title">¡Listo, guardado!</div>
-    <div class="conf-sub">Cuando volvás, encontralo te lleva directo.</div>
-  </div>
-  <div class="conf-card">
-    <div class="conf-row">
-      <div class="conf-icon"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 1C4.3 1 2.5 2.8 2.5 5C2.5 8 6.5 12 6.5 12S10.5 8 10.5 5C10.5 2.8 8.7 1 6.5 1Z" stroke="#D85A30" stroke-width="1.2" fill="none"/><circle cx="6.5" cy="5" r="1.3" fill="#D85A30"/></svg></div>
-      <div><div class="conf-main" id="cf-dir">—</div><div class="conf-sub2" id="cf-tipo">—</div></div>
-    </div>
-    <div class="conf-div"></div>
-    <div class="conf-row">
-      <div class="conf-icon"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="6.5" cy="6.5" r="4.5" stroke="#888780" stroke-width="1.2"/><path d="M6.5 4v2.5l1.5 1.5" stroke="#888780" stroke-width="1.2" stroke-linecap="round"/></svg></div>
-      <div><div class="conf-main" id="cf-hora">Hoy, 14:32</div><div class="conf-sub2">Guardado hace un momento</div></div>
-    </div>
-    <div class="conf-div" id="cf-nota-div" style="display:none;"></div>
-    <div class="conf-row" id="cf-nota-row" style="display:none;">
-      <div class="conf-icon"><svg width="13" height="13" viewBox="0 0 13 13" fill="none"><rect x="2" y="2" width="9" height="9" rx="1.5" stroke="#888780" stroke-width="1.2"/><path d="M4 5h5M4 7.5h3" stroke="#888780" stroke-width="1" stroke-linecap="round"/></svg></div>
-      <div><div class="conf-main" id="cf-nota-val">—</div><div class="conf-sub2">Nota guardada</div></div>
-    </div>
-  </div>
-  <div class="conf-actions">
-    <button class="conf-share" onclick="compartir()">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><circle cx="10" cy="2.5" r="1.5" stroke="#FFF8F2" stroke-width="1.1"/><circle cx="10" cy="10.5" r="1.5" stroke="#FFF8F2" stroke-width="1.1"/><circle cx="3" cy="6.5" r="1.5" stroke="#FFF8F2" stroke-width="1.1"/><path d="M4.3 7.2L8.7 9.8M8.7 3.2L4.3 5.8" stroke="#FFF8F2" stroke-width="1.1" stroke-linecap="round"/></svg>
-      <span class="conf-share-t">Compartir por WhatsApp</span>
-    </button>
-    <button class="cta" onclick="volverHome()"><span class="cta-t">Ir a donde dejé el auto</span></button>
-    <div class="conf-dismiss" onclick="volverHome()">Cerrar — ya sé dónde está</div>
-  </div>
-</div>
-
-<!-- ══ REGRESO ════════════════════════════════════════════ -->
-<div class="screen off" id="scr-regreso" style="background:var(--crema);">
-  <div class="sb" style="background:var(--crema);">
-    <span class="sb-time" style="color:var(--tinta);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-    </div>
-  </div>
-  <div class="tb" style="background:var(--crema);border-bottom:.5px solid var(--crema-border);">
-    <button class="tb-back" onclick="go('scr-home')">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <span style="font-size:14px;font-weight:600;color:var(--tinta);">Tu auto</span>
-    <div style="width:28px;"></div>
-  </div>
-  <div id="map-regreso" style="flex:1;min-height:0;"></div>
-  <div class="bp">
-    <div class="bp-handle"><div class="bp-pill"></div></div>
-    <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:11px;">
-      <div class="thumb">
-        <svg width="24" height="16" viewBox="0 0 24 16" fill="none" opacity=".4"><rect x="2" y="6" width="20" height="8" rx="2" fill="#FFF8F2"/><rect x="5" y="2" width="12" height="8" rx="2" fill="#FFF8F2"/><circle cx="6" cy="14" r="2.5" fill="#1C1812"/><circle cx="18" cy="14" r="2.5" fill="#1C1812"/></svg>
-      </div>
-      <div style="flex:1;">
-        <div class="bp-dir" id="reg-dir">Av. Santa Fe 2847</div>
-        <div class="bp-meta" id="reg-meta">Recoleta · Guardado hace 2h 36m</div>
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <span class="dist-badge" id="reg-dist">340 m</span>
-          <span class="walk-badge" id="reg-walk">~4 min caminando</span>
-        </div>
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: HISTORIAL
+  ════════════════════════════════════════════ -->
+  <section class="screen" id="screen-historial" data-screen="historial">
+    <div class="sb sb--light">
+      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
       </div>
     </div>
-    <button class="cta" style="margin-bottom:7px;" onclick="abrirMaps()">
-      <svg width="13" height="13" viewBox="0 0 13 13" fill="none"><path d="M6.5 11.5V3M6.5 3L3 6.5M6.5 3L10 6.5" stroke="#FFF8F2" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      <span class="cta-t">Abrir en Google Maps</span>
-    </button>
-    <div style="display:flex;gap:7px;">
-      <button class="sec-btn" onclick="compartir()">
-        <svg width="11" height="11" viewBox="0 0 11 11" fill="none"><circle cx="8.5" cy="2" r="1.5" stroke="#993C1D" stroke-width="1"/><circle cx="8.5" cy="9" r="1.5" stroke="#993C1D" stroke-width="1"/><circle cx="2" cy="5.5" r="1.5" stroke="#993C1D" stroke-width="1"/><path d="M3.3 6.1L7.2 8.4M7.2 2.6L3.3 4.9" stroke="#993C1D" stroke-width="1" stroke-linecap="round"/></svg>
-        Compartir
+    <header class="topbar topbar--border">
+      <button class="btn-back" onclick="Nav.setTab('home')" aria-label="Volver a inicio">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
       </button>
-      <button class="sec-btn" onclick="confirmarBorrar()">Ya llegué</button>
-    </div>
-  </div>
-</div>
+      <h2 class="topbar__title">Historial</h2>
+      <span class="topbar__count" id="hist-count" aria-live="polite">0 registros</span>
+    </header>
 
-<!-- ══ HISTORIAL ══════════════════════════════════════════ -->
-<div class="screen off" id="scr-hist" style="background:var(--crema);">
-  <div class="sb" style="background:var(--crema);">
-    <span class="sb-time" style="color:var(--tinta);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-    </div>
-  </div>
-  <div class="tb" style="background:var(--crema);border-bottom:.5px solid var(--crema-border);">
-    <button class="tb-back" onclick="setTab('home')">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <span style="font-size:14px;font-weight:600;color:var(--tinta);">Historial</span>
-    <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--gris);" id="hist-count">0 registros</span>
-  </div>
-  <div class="hist-list" id="hist-list"></div>
-  <div class="ad-banner">
-    <div class="ad-sq"></div>
-    <div><div class="ad-pub">publicidad</div><div class="ad-txt">Anuncio de Google AdSense</div></div>
-  </div>
-</div>
+    <div class="hist-list" id="hist-list" aria-live="polite"></div>
 
-<!-- ══ PERFIL ══════════════════════════════════════════════ -->
-<div class="screen off" id="scr-perfil" style="background:var(--crema);">
-  <div class="sb" style="background:var(--crema);">
-    <span class="sb-time" style="color:var(--tinta);">14:32</span>
-    <div style="display:flex;gap:5px;align-items:center;">
-      <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-    </div>
-  </div>
-  <div class="tb" style="background:var(--crema);border-bottom:.5px solid var(--crema-border);">
-    <button class="tb-back" onclick="go('scr-home')">
-      <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-    </button>
-    <span style="font-size:14px;font-weight:600;color:var(--tinta);">Perfil</span>
-    <div style="width:28px;"></div>
-  </div>
-  <div class="perf-body">
-    <div class="perf-header">
-      <div class="perf-avatar" id="perf-av">MA</div>
+    <!-- AdSense placeholder -->
+    <div class="ad-banner" aria-hidden="true">
+      <div class="ad-sq"></div>
       <div>
-        <div class="perf-name" id="perf-name">Milu</div>
-        <div class="perf-email" id="perf-email">milu@gmail.com</div>
+        <p class="ad-pub">publicidad</p>
+        <p class="ad-txt">Anuncio de Google AdSense</p>
       </div>
     </div>
+  </section>
 
-    <div class="perf-sect-lbl">Cuenta</div>
-    <div class="perf-group">
-      <div class="perf-row">
-        <div class="perf-row-icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="4" width="11" height="8" rx="2" stroke="#D85A30" stroke-width="1.1"/><path d="M4.5 4V3C4.5 1.9 5.6 1 7 1C8.4 1 9.5 1.9 9.5 3V4" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/></svg>
-        </div>
-        <div style="flex:1;">
-          <div class="perf-row-title">Vehículo</div>
-          <div class="perf-row-sub">Sin vehículo cargado</div>
-        </div>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="perf-row">
-        <div class="perf-row-icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="7 5 7 7.5 8.5 9" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/><path d="M1.5 7a5.5 5.5 0 1 0 .3-2.5" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/><polyline points="1.5 1.5 1.5 5 5 5" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </div>
-        <div style="flex:1;">
-          <div class="perf-row-title">Historial</div>
-          <div class="perf-row-sub" id="perf-cant">0 lugares guardados</div>
-        </div>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+
+  <!-- ═══════════════════════════════════════════
+       PANTALLA: PERFIL
+  ════════════════════════════════════════════ -->
+  <section class="screen" id="screen-perfil" data-screen="perfil">
+    <div class="sb sb--light">
+      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
+      <div class="sb__icons">
+        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
       </div>
     </div>
+    <header class="topbar topbar--border">
+      <button class="btn-back js-nav" data-to="home" aria-label="Volver">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </button>
+      <h2 class="topbar__title">Perfil</h2>
+      <div class="topbar__spacer"></div>
+    </header>
 
-    <div class="perf-sect-lbl">Permisos</div>
-    <div class="perf-group">
-      <div class="perf-row">
-        <div class="perf-row-icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.8 1 3 2.8 3 5C3 8.5 7 13 7 13S11 8.5 11 5C11 2.8 9.2 1 7 1Z" stroke="#D85A30" stroke-width="1.1" fill="none"/><circle cx="7" cy="5" r="1.5" fill="#D85A30"/></svg>
+    <div class="perf-body">
+      <div class="perf__header">
+        <div class="perf__avatar" id="perf-av">MA</div>
+        <div>
+          <p class="perf__name" id="perf-name">—</p>
+          <p class="perf__email" id="perf-email">—</p>
         </div>
-        <div style="flex:1;">
-          <div class="perf-row-title">Ubicación</div>
-          <div class="perf-row-sub">Solo mientras usás la app</div>
-        </div>
-        <div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"><div class="toggle-k"></div></div>
       </div>
-      <div class="perf-row">
-        <div class="perf-row-icon">
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="9" rx="2" stroke="#D85A30" stroke-width="1.1" fill="none"/><circle cx="7" cy="8" r="2" stroke="#D85A30" stroke-width="1.1" fill="none"/><path d="M4.5 3.5V2.5C4.5 2 5 1.5 5.5 1.5H8.5C9 1.5 9.5 2 9.5 2.5V3.5" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/></svg>
+
+      <p class="sect-label">Cuenta</p>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row__icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1.5" y="4" width="11" height="8" rx="2" stroke="#D85A30" stroke-width="1.1"/><path d="M4.5 4V3C4.5 1.9 5.6 1 7 1C8.4 1 9.5 1.9 9.5 3V4" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/></svg></div>
+          <div class="settings-row__text"><p class="settings-row__title">Vehículo</p><p class="settings-row__sub">Sin vehículo cargado</p></div>
+          <svg class="settings-row__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div style="flex:1;">
-          <div class="perf-row-title">Cámara</div>
-          <div class="perf-row-sub">Para fotos del lugar</div>
+        <div class="settings-row">
+          <div class="settings-row__icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><polyline points="7 5 7 7.5 8.5 9" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/><path d="M1.5 7a5.5 5.5 0 1 0 .3-2.5" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/><polyline points="1.5 1.5 1.5 5 5 5" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+          <div class="settings-row__text"><p class="settings-row__title">Historial</p><p class="settings-row__sub" id="perf-cant">0 lugares</p></div>
+          <svg class="settings-row__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         </div>
-        <div class="toggle on" onclick="this.classList.toggle('on');this.classList.toggle('off');"><div class="toggle-k"></div></div>
       </div>
+
+      <p class="sect-label">Permisos</p>
+      <div class="settings-group">
+        <div class="settings-row">
+          <div class="settings-row__icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.8 1 3 2.8 3 5C3 8.5 7 13 7 13S11 8.5 11 5C11 2.8 9.2 1 7 1Z" stroke="#D85A30" stroke-width="1.1" fill="none"/><circle cx="7" cy="5" r="1.5" fill="#D85A30"/></svg></div>
+          <div class="settings-row__text"><p class="settings-row__title">Ubicación</p><p class="settings-row__sub">Solo mientras usás la app</p></div>
+          <button class="toggle toggle--on" aria-label="Ubicación activa" aria-pressed="true" onclick="UI.toggleSwitch(this)"><div class="toggle__knob"></div></button>
+        </div>
+        <div class="settings-row">
+          <div class="settings-row__icon" aria-hidden="true"><svg width="14" height="14" viewBox="0 0 14 14" fill="none"><rect x="1" y="3.5" width="12" height="9" rx="2" stroke="#D85A30" stroke-width="1.1" fill="none"/><circle cx="7" cy="8" r="2" stroke="#D85A30" stroke-width="1.1" fill="none"/><path d="M4.5 3.5V2.5C4.5 2 5 1.5 5.5 1.5H8.5C9 1.5 9.5 2 9.5 2.5V3.5" stroke="#D85A30" stroke-width="1.1" stroke-linecap="round"/></svg></div>
+          <div class="settings-row__text"><p class="settings-row__title">Cámara</p><p class="settings-row__sub">Para fotos del lugar</p></div>
+          <button class="toggle toggle--on" aria-label="Cámara activa" aria-pressed="true" onclick="UI.toggleSwitch(this)"><div class="toggle__knob"></div></button>
+        </div>
+      </div>
+
+      <p class="sect-label">Legal</p>
+      <div class="settings-group">
+        <a href="#" class="settings-row settings-row--link"><div class="settings-row__text"><p class="settings-row__title">Política de privacidad</p></div><svg class="settings-row__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+        <a href="#" class="settings-row settings-row--link"><div class="settings-row__text"><p class="settings-row__title">Términos de uso</p></div><svg class="settings-row__arrow" width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg></a>
+      </div>
+
+      <button class="btn-logout" onclick="Auth.logout()">Cerrar sesión</button>
+      <p class="ver-label">encontralo v1.0 · MVP</p>
+      <div class="form-spacer"></div>
     </div>
+  </section>
 
-    <div class="perf-sect-lbl">Legal</div>
-    <div class="perf-group">
-      <div class="perf-row">
-        <div style="flex:1;"><div class="perf-row-title">Política de privacidad</div></div>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-      <div class="perf-row">
-        <div style="flex:1;"><div class="perf-row-title">Términos de uso</div></div>
-        <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2L6.5 5L3.5 8" stroke="#888780" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-      </div>
-    </div>
+</div><!-- /#app -->
 
-    <button class="btn-logout" onclick="cerrarSesion()">Cerrar sesión</button>
-    <div class="ver-txt">encontralo v1.0</div>
-    <div style="height:20px;"></div>
-  </div>
-</div>
+<!-- Leaflet JS -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
-</div><!-- #app -->
+<!--
+  ═══════════════════════════════════════════
+  SUPABASE: cuando tengas el proyecto creado,
+  descomentar estas dos líneas y configurar
+  las variables en app.js (SUPABASE_URL y SUPABASE_KEY)
+  ═══════════════════════════════════════════
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+-->
 
-<script>
-// ─── STATE ────────────────────────────────────────────────
-const S = {
-  loggedIn: false,
-  autoData: null,
-  historial: [],
-  tipo: 'Calle',
-  lat: -34.6037, lng: -58.3816,
-  autoLat: -34.6037, autoLng: -58.3816,
-  mapHome: null, mapGuardar: null, mapRegreso: null,
-  mInit: {}
-};
+<!-- Lógica de la app -->
+<script src="app.js"></script>
 
-// ─── NAVIGATION ───────────────────────────────────────────
-function go(id) {
-  document.querySelectorAll('.screen').forEach(s => {
-    if (s.id === id) { s.classList.remove('off','off-up','off-left'); }
-    else {
-      const cur = s.id;
-      // guardar y confirm slide up, others slide right
-      if (id==='scr-guardar'||id==='scr-confirm') s.classList.add('off-left');
-      else s.classList.add('off');
-    }
-  });
-  if (id === 'scr-hist') renderHist();
-  if (id === 'scr-perfil') {
-    document.getElementById('perf-cant').textContent = S.historial.length + ' lugares guardados';
-  }
-}
-
-function setTab(tab) {
-  document.getElementById('nav-home').classList.toggle('active', tab==='home');
-  document.getElementById('nav-hist').classList.toggle('active', tab==='hist');
-  if (tab === 'home') go('scr-home');
-  else { go('scr-hist'); renderHist(); }
-}
-
-// ─── CLOCK ────────────────────────────────────────────────
-function tick() {
-  const d = new Date(), t = d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');
-  ['clock','clk1'].forEach(id => { const el=document.getElementById(id); if(el) el.textContent=t; });
-}
-setInterval(tick, 15000); tick();
-
-// ─── LOGIN ────────────────────────────────────────────────
-function doLogin() {
-  const btn = document.getElementById('btn-google');
-  btn.textContent = 'Ingresando...'; btn.disabled = true;
-  setTimeout(() => { S.loggedIn = true; go('scr-home'); }, 1000);
-}
-
-// ─── GEO ──────────────────────────────────────────────────
-function getGeo(cb) {
-  if (!navigator.geolocation) return cb(false);
-  navigator.geolocation.getCurrentPosition(
-    p => { S.lat = p.coords.latitude; S.lng = p.coords.longitude; cb(true); },
-    () => cb(false), {timeout:5000}
-  );
-}
-function reverseGeo(lat,lng,cb) {
-  fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=es`)
-    .then(r=>r.json())
-    .then(d=>{
-      const a=d.address||{};
-      const road=a.road||a.pedestrian||a.street||'Ubicación actual';
-      const num=a.house_number?' '+a.house_number:'';
-      const barrio=a.suburb||a.neighbourhood||a.city||'Buenos Aires';
-      cb(road+num, barrio);
-    }).catch(()=>cb('Ubicación actual','Buenos Aires'));
-}
-
-// ─── MAP UTILS ────────────────────────────────────────────
-function carMarker() {
-  return L.divIcon({html:`<div style="width:36px;height:36px;border-radius:50%;background:#D85A30;border:3px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.2);">
-    <svg width="18" height="12" viewBox="0 0 24 16" fill="white"><rect x="2" y="6" width="20" height="8" rx="2"/><rect x="5" y="2" width="12" height="8" rx="2"/></svg></div>`,className:'',iconAnchor:[18,18]});
-}
-function youMarker() {
-  return L.divIcon({html:`<div style="width:14px;height:14px;border-radius:50%;background:#2A5C8A;border:2.5px solid white;box-shadow:0 2px 6px rgba(0,0,0,.2);"></div>`,className:'',iconAnchor:[7,7]});
-}
-
-// ─── MAP HOME ─────────────────────────────────────────────
-function updateMapHome() {
-  if (!S.mapHome || !S.autoData) return;
-  const m = S.mapHome;
-  m.eachLayer(l=>{ if(l._latlng) m.removeLayer(l); });
-  if(S.polyHome) m.removeLayer(S.polyHome);
-  L.marker([S.autoLat,S.autoLng],{icon:carMarker()}).addTo(m);
-  L.marker([S.lat,S.lng],{icon:youMarker()}).addTo(m);
-  S.polyHome = L.polyline([[S.lat,S.lng],[S.autoLat,S.autoLng]],{color:'#D85A30',weight:2.5,dashArray:'8 6',opacity:.65}).addTo(m);
-  m.fitBounds([[S.lat,S.lng],[S.autoLat,S.autoLng]],{padding:[60,60]});
-}
-
-function initMapHome() {
-  if (S.mInit.home) { updateMapHome(); return; }
-  const m = L.map('map-home',{zoomControl:false,attributionControl:false,dragging:false,touchZoom:false,scrollWheelZoom:false,doubleClickZoom:false,boxZoom:false,keyboard:false});
-  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(m);
-  S.mapHome = m; S.mInit.home = true;
-  updateMapHome();
-}
-
-// ─── GUARDAR ──────────────────────────────────────────────
-function initGuardar() {
-  setTimeout(() => {
-    if (!S.mInit.guardar) {
-      const m = L.map('map-guardar',{zoomControl:false,attributionControl:false});
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(m);
-      S.mapGuardar = m; S.mInit.guardar = true;
-    }
-    getGeo(ok => {
-      const lat = ok ? S.lat : -34.6037;
-      const lng = ok ? S.lng : -58.3816;
-      S.mapGuardar.setView([lat,lng],17);
-      S.mapGuardar.eachLayer(l=>{ if(l._latlng) S.mapGuardar.removeLayer(l); });
-      const pin = L.divIcon({html:`<div style="width:30px;height:30px;border-radius:50%;background:#D85A30;border:3px solid white;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,0,0,.25);"><svg width="14" height="14" viewBox="0 0 14 14" fill="white"><circle cx="7" cy="6" r="2.5"/><path d="M7 1C4.5 1 2.5 3 2.5 5.5C2.5 9.5 7 13 7 13S11.5 9.5 11.5 5.5C11.5 3 9.5 1 7 1Z" stroke="none"/></svg></div>`,className:'',iconAnchor:[15,15]});
-      L.marker([lat,lng],{icon:pin}).addTo(S.mapGuardar);
-      S._pLat=lat; S._pLng=lng;
-      reverseGeo(lat,lng,(dir,barrio)=>{
-        document.getElementById('g-dir').textContent=dir;
-        document.getElementById('g-coords').textContent=barrio+' · '+lat.toFixed(5)+', '+lng.toFixed(5);
-        S._pDir=dir; S._pBarrio=barrio;
-      });
-    });
-  }, 80);
-}
-
-function selTipo(el, tipo) {
-  document.querySelectorAll('.tipo-btn').forEach(b=>b.classList.remove('sel'));
-  el.classList.add('sel'); S.tipo=tipo;
-}
-function handleFoto(inp) {
-  const f=inp.files[0]; if(!f) return;
-  const r=new FileReader(); r.onload=e=>{
-    document.getElementById('preview-foto').src=e.target.result;
-    document.getElementById('preview-foto').style.display='block';
-    document.getElementById('foto-area').style.display='none';
-    S._foto=e.target.result;
-  }; r.readAsDataURL(f);
-}
-
-function guardarLugar() {
-  const dir=S._pDir||'Ubicación guardada';
-  const barrio=S._pBarrio||'Buenos Aires';
-  const nota=document.getElementById('g-nota').value.trim();
-  const ts=new Date();
-  S.autoData={dir,barrio,nota,tipo:S.tipo,ts,lat:S._pLat||S.lat,lng:S._pLng||S.lng,foto:S._foto||null};
-  S.autoLat=S.autoData.lat; S.autoLng=S.autoData.lng;
-  S.historial.unshift({...S.autoData});
-  // fill confirm screen
-  document.getElementById('cf-dir').textContent=dir;
-  document.getElementById('cf-tipo').textContent=barrio+' · '+S.tipo;
-  document.getElementById('cf-hora').textContent='Hoy, '+fHora(ts);
-  if(nota){
-    document.getElementById('cf-nota-val').textContent=nota;
-    document.getElementById('cf-nota-row').style.display='flex';
-    document.getElementById('cf-nota-div').style.display='block';
-  } else {
-    document.getElementById('cf-nota-row').style.display='none';
-    document.getElementById('cf-nota-div').style.display='none';
-  }
-  // reset form
-  document.getElementById('g-nota').value='';
-  S._foto=null;
-  document.getElementById('preview-foto').style.display='none';
-  document.getElementById('foto-area').style.display='flex';
-  go('scr-confirm');
-}
-
-function volverHome() {
-  go('scr-home');
-  if (S.autoData) {
-    document.getElementById('state-empty').style.display='none';
-    document.getElementById('state-guardado').style.display='flex';
-    document.getElementById('home-dir').textContent=S.autoData.dir;
-    document.getElementById('home-meta').textContent=S.autoData.barrio+' · Guardado '+tRel(S.autoData.ts);
-    const d=calcDist(S.lat,S.lng,S.autoLat,S.autoLng);
-    document.getElementById('home-dist').textContent=fDist(d);
-    document.getElementById('home-walk').textContent='~'+Math.round(d/80)+' min caminando';
-    setTimeout(initMapHome,150);
-  }
-}
-
-// ─── REGRESO ──────────────────────────────────────────────
-function initRegreso() {
-  setTimeout(()=>{
-    if(!S.mInit.regreso){
-      const m=L.map('map-regreso',{zoomControl:false,attributionControl:false});
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19}).addTo(m);
-      S.mapRegreso=m; S.mInit.regreso=true;
-    }
-    const m=S.mapRegreso;
-    m.eachLayer(l=>{ if(l._latlng) m.removeLayer(l); });
-    if(S.polyReg) m.removeLayer(S.polyReg);
-    L.marker([S.autoLat,S.autoLng],{icon:carMarker()}).addTo(m);
-    L.marker([S.lat,S.lng],{icon:youMarker()}).addTo(m);
-    S.polyReg=L.polyline([[S.lat,S.lng],[S.autoLat,S.autoLng]],{color:'#D85A30',weight:3,dashArray:'10 8',opacity:.75}).addTo(m);
-    m.fitBounds([[S.lat,S.lng],[S.autoLat,S.autoLng]],{padding:[80,80]});
-    if(S.autoData){
-      const d=calcDist(S.lat,S.lng,S.autoLat,S.autoLng);
-      document.getElementById('reg-dir').textContent=S.autoData.dir;
-      document.getElementById('reg-meta').textContent=S.autoData.barrio+' · Guardado '+tRel(S.autoData.ts);
-      document.getElementById('reg-dist').textContent=fDist(d);
-      document.getElementById('reg-walk').textContent='~'+Math.round(d/80)+' min caminando';
-    }
-  },80);
-}
-
-// ─── HISTORIAL ────────────────────────────────────────────
-function renderHist() {
-  const el=document.getElementById('hist-list');
-  document.getElementById('hist-count').textContent=S.historial.length+' registros';
-  if(!S.historial.length){
-    el.innerHTML=`<div style="text-align:center;padding:48px 24px;color:var(--gris);font-size:13px;line-height:1.8;">Todavía no guardaste ningún lugar.<br>La próxima vez que estaciones, tocá el botón y listo.</div>`;
-    return;
-  }
-  el.innerHTML=S.historial.map((h,i)=>`
-    <div class="hist-item ${i===0&&S.autoData?'active':''}">
-      <div class="hist-thumb ${h.foto?'':'empty'}" style="${h.foto?'background-image:url('+h.foto+');background-size:cover;background-position:center;':''}">
-        ${!h.foto?`<svg width="18" height="12" viewBox="0 0 18 12" fill="none" opacity=".5"><rect x="1" y="4" width="16" height="7" rx="2" fill="#888780"/><rect x="4" y="1" width="9" height="7" rx="2" fill="#888780"/></svg>`:''}
-      </div>
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:2px;">
-          <span class="hist-dir">${h.dir}</span>
-          <span class="${i===0&&S.autoData?'hist-badge':'hist-badge-old'}">${fFecha(h.ts)}</span>
-        </div>
-        <div class="hist-meta">${h.barrio} · ${fHora(h.ts)} · ${h.tipo}</div>
-        ${h.nota?`<div style="font-size:10px;color:var(--gris);margin-top:3px;font-style:italic;">${h.nota}</div>`:''}
-      </div>
-    </div>`).join('');
-  el.innerHTML+=`<div class="hist-clear"><button onclick="if(confirm('¿Borrar todo el historial?')){S.historial=[];renderHist();}">Borrar todo el historial</button></div>`;
-}
-
-// ─── BORRAR ───────────────────────────────────────────────
-function confirmarBorrar() {
-  if(confirm('¿Ya encontraste el auto? Se va a borrar el lugar guardado.')) {
-    S.autoData=null;
-    document.getElementById('state-guardado').style.display='none';
-    document.getElementById('state-empty').style.display='flex';
-    go('scr-home');
-  }
-}
-
-// ─── COMPARTIR ────────────────────────────────────────────
-function compartir() {
-  if(!S.autoData) return;
-  const txt=`Guardé el auto con encontralo:\n${S.autoData.dir}, ${S.autoData.barrio}\nhttps://maps.google.com/?q=${S.autoLat},${S.autoLng}`;
-  if(navigator.share) navigator.share({title:'Mi auto está en',text:txt});
-  else { navigator.clipboard?.writeText(txt).then(()=>alert('Ubicación copiada ✓')).catch(()=>alert(txt)); }
-}
-function abrirMaps() {
-  window.open(`https://maps.google.com/maps?daddr=${S.autoLat},${S.autoLng}`,'_blank');
-}
-function cerrarSesion() {
-  if(confirm('¿Cerrar sesión?')){ S.loggedIn=false; go('scr-login'); }
-}
-
-// ─── UTILS ────────────────────────────────────────────────
-function calcDist(la1,ln1,la2,ln2){
-  const R=6371000,dL=(la2-la1)*Math.PI/180,dN=(ln2-ln1)*Math.PI/180;
-  const a=Math.sin(dL/2)**2+Math.cos(la1*Math.PI/180)*Math.cos(la2*Math.PI/180)*Math.sin(dN/2)**2;
-  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
-}
-function fDist(d){return d<1000?Math.round(d)+' m':(d/1000).toFixed(1)+' km';}
-function fHora(d){return d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0');}
-function fFecha(d){
-  const now=new Date(),diff=now-d;
-  if(diff<86400000) return 'Hoy';
-  if(diff<172800000) return 'Ayer';
-  return d.getDate().toString().padStart(2,'0')+'/'+(d.getMonth()+1).toString().padStart(2,'0');
-}
-function tRel(d){
-  const m=Math.floor((Date.now()-d)/60000);
-  if(m<1)return 'hace un momento';
-  if(m<60)return 'hace '+m+' min';
-  const h=Math.floor(m/60),rm=m%60;
-  return 'hace '+(rm?h+'h '+rm+'m':h+'h');
-}
-</script>
 </body>
 </html>
