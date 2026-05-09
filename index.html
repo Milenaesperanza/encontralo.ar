@@ -4,13 +4,14 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
-  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
-  <meta name="theme-color" content="#D85A30" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="theme-color" content="#1C1812" />
   <meta name="description" content="Guardá dónde estacionaste y encontrá tu auto fácilmente." />
   <title>encontralo</title>
 
   <!-- PWA manifest -->
   <link rel="manifest" href="manifest.json" />
+  <link rel="apple-touch-icon" href="icons/icon-192.png" />
 
   <!-- Fuentes -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -30,13 +31,6 @@
        PANTALLA: ONBOARDING 1 — Propuesta de valor
   ════════════════════════════════════════════ -->
   <section class="screen active" id="screen-onb1" data-screen="onb1">
-    <div class="sb sb--dark">
-      <span class="sb__time js-clock">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
-      </div>
-    </div>
 
     <div class="onb__body">
       <div class="onb__illustration" aria-hidden="true">
@@ -76,13 +70,6 @@
        PANTALLA: ONBOARDING 2 — Permisos GPS
   ════════════════════════════════════════════ -->
   <section class="screen" id="screen-onb2" data-screen="onb2">
-    <div class="sb sb--dark">
-      <span class="sb__time js-clock">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
-      </div>
-    </div>
 
     <div class="onb__body">
       <div class="perm__rings" aria-hidden="true">
@@ -120,13 +107,6 @@
        PANTALLA: LOGIN — Google Auth
   ════════════════════════════════════════════ -->
   <section class="screen" id="screen-login" data-screen="login">
-    <div class="sb sb--dark">
-      <span class="sb__time js-clock">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#FFF8F2" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#FFF8F2"/></svg>
-      </div>
-    </div>
 
     <div class="login__body">
       <svg class="login__logo" width="56" height="56" viewBox="0 0 52 52" fill="none" aria-label="encontralo logo">
@@ -171,13 +151,6 @@
        Estado B: con auto guardado
   ════════════════════════════════════════════ -->
   <section class="screen" id="screen-home" data-screen="home">
-    <div class="sb sb--light">
-      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-        <svg width="22" height="10" viewBox="0 0 22 10" fill="none"><rect x=".5" y=".5" width="19" height="9" rx="2" stroke="#1C1812" stroke-opacity=".25"/><rect x="2" y="2" width="14" height="6" rx="1" fill="#1C1812"/></svg>
-      </div>
-    </div>
 
     <header class="topbar">
       <div class="topbar__logo">
@@ -262,12 +235,6 @@
        PANTALLA: GUARDAR LUGAR
   ════════════════════════════════════════════ -->
   <section class="screen screen--slide-up" id="screen-guardar" data-screen="guardar">
-    <div class="sb sb--light">
-      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      </div>
-    </div>
     <header class="topbar topbar--border">
       <button class="btn-back js-nav" data-to="home" aria-label="Volver">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -342,12 +309,6 @@
        PANTALLA: CONFIRMACIÓN
   ════════════════════════════════════════════ -->
   <section class="screen screen--slide-up" id="screen-confirm" data-screen="confirm">
-    <div class="sb sb--dark">
-      <span class="sb__time js-clock">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#FFF8F2"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#FFF8F2"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#FFF8F2"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      </div>
-    </div>
 
     <div class="confirm__hero">
       <div class="confirm__ring" aria-hidden="true">
@@ -389,12 +350,6 @@
        PANTALLA: REGRESO AL AUTO
   ════════════════════════════════════════════ -->
   <section class="screen" id="screen-regreso" data-screen="regreso">
-    <div class="sb sb--light">
-      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      </div>
-    </div>
     <header class="topbar topbar--border">
       <button class="btn-back js-nav" data-to="home" aria-label="Volver">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -436,12 +391,6 @@
        PANTALLA: HISTORIAL
   ════════════════════════════════════════════ -->
   <section class="screen" id="screen-historial" data-screen="historial">
-    <div class="sb sb--light">
-      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      </div>
-    </div>
     <header class="topbar topbar--border">
       <button class="btn-back" onclick="Nav.setTab('home')" aria-label="Volver a inicio">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -467,12 +416,6 @@
        PANTALLA: PERFIL
   ════════════════════════════════════════════ -->
   <section class="screen" id="screen-perfil" data-screen="perfil">
-    <div class="sb sb--light">
-      <span class="sb__time js-clock" style="color:var(--tinta);">14:32</span>
-      <div class="sb__icons">
-        <svg width="13" height="10" viewBox="0 0 13 10" fill="none"><rect x="0" y="3.5" width="2.5" height="6.5" rx=".8" fill="#1C1812"/><rect x="3.5" y="2" width="2.5" height="8" rx=".8" fill="#1C1812"/><rect x="7" y=".5" width="2.5" height="9.5" rx=".8" fill="#1C1812"/><rect x="10.5" y="0" width="2.5" height="10" rx=".8" fill="#D85A30"/></svg>
-      </div>
-    </div>
     <header class="topbar topbar--border">
       <button class="btn-back js-nav" data-to="home" aria-label="Volver">
         <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true"><path d="M6.5 2L3.5 5L6.5 8" stroke="#1C1812" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>

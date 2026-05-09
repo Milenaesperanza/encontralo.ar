@@ -31,9 +31,12 @@ const CONFIG = {
   WALK_SPEED_MPM: 80,
 
   // Onboarding: flag en localStorage
-  ONB_KEY: 'encontralo_onb_done',
+  ONB_KEY:  'encontralo_onb_done',
   // Auth: flag en localStorage (se reemplaza con Supabase session)
   AUTH_KEY: 'encontralo_user',
+  // Persistencia local
+  AUTO_KEY: 'encontralo_auto',
+  HIST_KEY: 'encontralo_hist',
 };
 
 
@@ -104,8 +107,7 @@ const DB = {
   //   if (error) throw error;
   // },
   async savePark(data) {
-    // LOCAL: guardado temporal en memoria
-    console.log('[DB] savePark (local):', data);
+    console.log('[DB] savePark:', data);
     return { id: 'local_' + Date.now() };
   },
 
@@ -119,7 +121,8 @@ const DB = {
   //   if (error) throw error;
   // },
   async markFound(parkId) {
-    console.log('[DB] markFound (local):', parkId);
+    console.log('[DB] markFound:', parkId);
+    localStorage.removeItem(CONFIG.AUTO_KEY);
   },
 
 
@@ -135,9 +138,8 @@ const DB = {
   //   return data;
   // },
   async loadHistory(userId) {
-    // LOCAL: devuelve lo que está en memoria
-    console.log('[DB] loadHistory (local):', userId);
-    return State.get().historial;
+    console.log('[DB] loadHistory:', userId);
+    return this.loadHist();
   },
 
 
@@ -153,8 +155,37 @@ const DB = {
   //   return data.publicUrl;
   // },
   async uploadFoto(userId, base64) {
-    // LOCAL: devuelve el base64 como URL temporal
     return base64;
+  },
+
+  persistAuto(autoData) {
+    try {
+      const s = { ...autoData, ts: autoData.ts instanceof Date ? autoData.ts.toISOString() : autoData.ts };
+      localStorage.setItem(CONFIG.AUTO_KEY, JSON.stringify(s));
+    } catch (e) { console.warn('[DB] persistAuto:', e); }
+  },
+
+  persistHist(historial) {
+    try {
+      const s = historial.map(h => ({ ...h, ts: h.ts instanceof Date ? h.ts.toISOString() : h.ts }));
+      localStorage.setItem(CONFIG.HIST_KEY, JSON.stringify(s.slice(0, 100)));
+    } catch (e) { console.warn('[DB] persistHist:', e); }
+  },
+
+  loadAuto() {
+    try {
+      const raw = localStorage.getItem(CONFIG.AUTO_KEY);
+      if (!raw) return null;
+      const d = JSON.parse(raw);
+      return { ...d, ts: new Date(d.ts) };
+    } catch { return null; }
+  },
+
+  loadHist() {
+    try {
+      return JSON.parse(localStorage.getItem(CONFIG.HIST_KEY) || '[]')
+        .map(h => ({ ...h, ts: new Date(h.ts) }));
+    } catch { return []; }
   },
 
 };
@@ -214,6 +245,8 @@ const Auth = {
     UI.setLoginLoading(false);
     UI.updateUserUI(user);
     Nav.go('home');
+    const auto = State.get().autoData;
+    if (auto) App._mostrarAutoGuardado(auto);
   },
 
   async logout() {
@@ -224,7 +257,9 @@ const Auth = {
     // ═════════════════════════════════════════════════════════
 
     localStorage.removeItem(CONFIG.AUTH_KEY);
+    localStorage.removeItem(CONFIG.AUTO_KEY);
     State.setUser(null);
+    State.clearAuto();
     Nav.go('login');
   },
 
@@ -541,6 +576,8 @@ const Guardar = {
 
       State.setAutoData(autoData);
       State.addHistorial({ ...autoData });
+      DB.persistAuto(autoData);
+      DB.persistHist(State.get().historial);
 
       // Llenar pantalla de confirmación
       document.getElementById('cf-dir').textContent  = autoData.dir;
@@ -623,8 +660,9 @@ const App = {
     Maps.invalidate('map-regreso');
   },
 
-  confirmarBorrar() {
+  async confirmarBorrar() {
     if (!confirm('¿Ya encontraste el auto? Se borrará el lugar guardado.')) return;
+    await DB.markFound(State.get().autoData?.id);
     State.clearAuto();
     document.getElementById('state-guardado').classList.add('hidden');
     document.getElementById('state-empty').classList.remove('hidden');
@@ -665,6 +703,10 @@ const Nav = {
       const isTarget = s.dataset.screen === screenId;
       s.classList.toggle('active', isTarget);
     });
+
+    const darkScreens = ['onb1', 'onb2', 'login', 'confirm'];
+    const color = darkScreens.includes(screenId) ? '#1C1812' : '#FFF8F2';
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
 
     // Acciones al llegar a cada pantalla
     if (screenId === 'historial') Historial.render();
@@ -749,6 +791,7 @@ const Historial = {
 
   clear() {
     if (!confirm('¿Borrar todo el historial? Esta acción no se puede deshacer.')) return;
+    localStorage.removeItem(CONFIG.HIST_KEY);
     State.set({ historial: [] });
     this.render();
   },
@@ -873,10 +916,6 @@ function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
 document.addEventListener('DOMContentLoaded', () => {
 
-  // ─── Clock ───────────────────────────────────────────────
-  Utils.clock();
-  setInterval(Utils.clock, 15000);
-
   // ─── Navegación declarativa (data-to) ────────────────────
   document.querySelectorAll('.js-nav').forEach(el => {
     el.addEventListener('click', () => {
@@ -904,6 +943,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const onbDone = localStorage.getItem(CONFIG.ONB_KEY);
   const user    = Auth.restoreSession();
 
+  // Cargar datos persistidos (antes de mostrar cualquier pantalla)
+  const savedHist = DB.loadHist();
+  const savedAuto = DB.loadAuto();
+  State.set({ historial: savedHist });
+  if (savedAuto) State.setAutoData(savedAuto);
+
   if (!onbDone) {
     localStorage.setItem(CONFIG.ONB_KEY, '1');
     Nav.go('onb1');
@@ -912,8 +957,14 @@ document.addEventListener('DOMContentLoaded', () => {
   } else {
     UI.updateUserUI(user);
     Nav.go('home');
-    // Intentar obtener ubicación en segundo plano
-    Geo.getCurrentPosition().catch(() => {});
+    if (savedAuto) {
+      App._mostrarAutoGuardado(savedAuto);
+      Geo.getCurrentPosition()
+        .then(() => App._mostrarAutoGuardado(savedAuto))
+        .catch(() => {});
+    } else {
+      Geo.getCurrentPosition().catch(() => {});
+    }
   }
 
   // ─── Service Worker (PWA) ────────────────────────────────

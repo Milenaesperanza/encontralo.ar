@@ -1,11 +1,13 @@
 {
+  "id": "./",
   "name": "encontralo",
   "short_name": "encontralo",
   "description": "Guardá dónde estacionaste y encontrá tu auto fácilmente.",
-  "start_url": "/",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
   "background_color": "#FFF8F2",
-  "theme_color": "#D85A30",
+  "theme_color": "#1C1812",
   "orientation": "portrait",
   "lang": "es-AR",
   "icons": [
